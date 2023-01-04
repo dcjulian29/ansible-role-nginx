@@ -1,0 +1,101 @@
+---
+nginx_package_name: nginx
+nginx_service_state: started
+nginx_service_enabled: true
+
+nginx_conf_path: /etc/nginx/conf.d
+nginx_conf_file_path: /etc/nginx/nginx.conf
+
+nginx_remove_default_vhost: true
+
+nginx_error_log: "/var/log/nginx/error.log warn"
+
+##### Used in nginx.conf
+
+nginx_worker_processes: >-
+  {{ ansible_processor_vcpus | default(ansible_processor_count) }}
+nginx_worker_connections: 1024
+nginx_multi_accept: "off"
+nginx_server_names_hash_bucket_size: 128
+nginx_client_max_body_size: "64m"
+
+nginx_ssl_ecdh_curve: secp384r1
+nginx_ssl_enabled: false
+nginx_ssl_dhparams_size: 2048
+nginx_ssl_ciphers: 'EECDH+AESGCM:EDH+AESGCM kEECDH+ECDSA+AES256 kEECDH+AES256'
+nginx_ssl_protocols: 'TLSv1.1 TLSv1.2 TLSv1.3'
+
+nginx_access_log: "/var/log/nginx/access.log main buffer=16k flush=2m"
+nginx_log_format: |-
+  '$remote_addr - $remote_user [$time_local] "$request" '
+  '$status $body_bytes_sent "$http_referer" '
+  '"$http_user_agent" "$http_x_forwarded_for"'
+
+nginx_gzip: "on"
+nginx_sendfile: "on"
+nginx_tcp_nopush: "on"
+nginx_tcp_nodelay: "on"
+nginx_keepalive_timeout: 65
+nginx_keepalive_requests: 100
+
+nginx_server_tokens: "off"
+
+nginx_extra_conf_options: ""
+# Example extra main options, used within the main nginx context:
+#   nginx_extra_conf_options: |
+#     env VARIABLE;
+#     include /etc/nginx/main.d/*.conf;
+
+nginx_extra_http_options: ""
+# Example extra http options, printed inside the main server http config:
+#    nginx_extra_http_options: |
+#      proxy_buffering    off;
+#      proxy_set_header   X-Real-IP $remote_addr;
+#      proxy_set_header   X-Scheme $scheme;
+#      proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+#      proxy_set_header   Host $http_host;
+
+nginx_upstreams: []
+# - name: myapp1
+#   strategy: "ip_hash" # "least_conn", etc.
+#   keepalive: 16 # optional
+#   servers: {
+#     "srv1.example.com",
+#     "srv2.example.com weight=3",
+#     "srv3.example.com"
+#   }
+
+
+##### Virtual Hosts
+nginx_vhosts: []
+# Example vhost below, showing all available options:
+# - listen: 80 # default: 80
+#   listen_ipv6: yes # default: "no"
+#   server_name: "example.com" # default: N/A
+#   root: "/var/www/example.com" # default: N/A
+#   index: "index.html index.htm" # default: "index.html index.htm"
+#   filename: "example.com.conf" # Can be used to set the vhost filename.
+#
+#   # For SSL sites, these parameters are only added if nginx_ssl_enabled is true.
+#   acme: no # If true, add .well-known location for HTTP validation of ACME certificates.
+#   acme_challenge: /var/www/letsencrypt
+#   hsts: no # Add Strict-Transport-Security header to HTTPS Pinning.
+#   hsts_age: 31536000
+#   ocsp: no # HTTPS stapling.
+#   ocsp_cert: '' # HTTPS stapling OCSP certificate.
+#   ssl_cert: "" # File path to SSL certificate file
+#   ssl_key: "" # File path to SSL key file
+#   ssl_listen: 443 # default: 443
+#
+#   # Properties that are only added if defined:
+#   server_name_redirect: '' # "www.example.com" to "example.com"
+#   error_page: ""
+#   access_log: "" # Custom access log for site
+#   error_log: "" # Custom error log for site.
+#   extra_parameters: "" # Can be used to add extra config blocks (multiline).
+#   state: "absent" # To remove the vhost configuration.
+#   protect_content_sniffing: false
+#   protect_frame_embedded: false
+#   protect_frame_option: DENY # or SAMEORIGIN to enable use within domain.
+#   protect_cross_site_scripting: false
+#   protect_robots: false

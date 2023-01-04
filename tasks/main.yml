@@ -1,0 +1,88 @@
+---
+- name: Include OS-specific variables
+  ansible.builtin.include_vars: "{{ ansible_os_family | lower }}.yml"
+
+- name: Ensure nginx is installed.
+  ansible.builtin.package:
+    name: "{{ nginx_package_name }}"
+    update_cache: true
+    state: latest
+
+- name: Ensure nginx is enabled if applicable
+  ansible.builtin.service:
+    name: nginx
+    enabled: "{{ nginx_service_enabled }}"
+
+- name: Ensure ssl-cert package is installed if needed
+  ansible.builtin.package:
+    name: ssl-cert
+    state: present
+  when: nginx_ssl_enabled
+
+- name: Ensure dhparams is configured properly if needed
+  community.crypto.openssl_dhparam:
+    path: '/etc/nginx/dhparams.pem'
+    select_crypto_backend: openssl
+    size: "{{ nginx_ssl_dhparams_size }}"
+    mode: 0644
+    owner: 'root'
+    group: 'root'
+  when: nginx_ssl_enabled
+
+- name: Ensure primary nginx configuration is correct and in place
+  ansible.builtin.template:
+    src: "nginx.conf.j2"
+    dest: "/etc/nginx/nginx.conf"
+    owner: root
+    group: root
+    mode: 0644
+  register: primary_config
+
+- name: Ensure default nginx vhost file is removed (if configured)
+  ansible.builtin.file:
+    path: "{{ nginx_vhost_default }}"
+    state: absent
+  when: nginx_remove_default_vhost | bool
+  register: vhost_config_default
+
+- name: Ensure directory for nginx vhost exists
+  ansible.builtin.file:
+    path: "{{ nginx_vhost_path }}"
+    state: directory
+    mode: 0755
+
+- name: Create self-signed certificates, if needed
+  ansible.builtin.include_tasks: selfsign.yml
+  loop: "{{ nginx_vhosts }}"
+  when:
+    - nginx_ssl_enabled
+    - nginx_vhosts and item.ssl_cert is defined and item.ssl_cert | length > 0 | default(false)
+    - nginx_vhosts and item.ssl_key is defined and item.ssl_key | length > 0 | default(false)
+
+- name: Ensure each vhost config files exists, is correct (if configured)
+  ansible.builtin.template:
+    src: "{{ item.template | default('vhost.conf.j2') }}"
+    dest: "{{ nginx_vhost_path }}/{{ item.filename | default(item.server_name.split(' ')[0] ~ '.conf') }}"
+    force: true
+    owner: root
+    group: root
+    mode: 0644
+  when: item.state | default('present') != 'absent'
+  with_items: "{{ nginx_vhosts }}"
+  register: vhost_config_add
+
+- name: Ensure vhost config files do not exists (if configured)
+  ansible.builtin.file:
+    path: "{{ nginx_vhost_path }}/{{ item.filename | default(item.server_name.split(' ')[0] ~ '.conf') }}"
+    state: absent
+  when: item.state | default('present') == 'absent'
+  with_items: "{{ nginx_vhosts }}"
+  register: vhost_config_remove
+
+- name: Start or re-start NGINX if needed
+  ansible.builtin.service:
+    name: nginx
+    state: restarted
+  when:
+    - nginx_service_state == "started"
+    - primary_config.changed or vhost_config_default.changed or vhost_config_add.changed or vhost_config_remove.changed

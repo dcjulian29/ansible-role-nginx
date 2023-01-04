@@ -1,0 +1,25 @@
+---
+- name: Check if key exists
+  ansible.builtin.stat:
+    path: "{{ item.ssl_cert }}"
+  register: nginx_key_exists
+
+- name: Generate an private key if missing
+  community.crypto.openssl_privatekey:
+    path: "{{ item.ssl_key }}"
+    size: 2048
+  when:
+    - not nginx_key_exists.stat.exists
+
+- name: Check if certificate exists.
+  ansible.builtin.stat:
+    path: "{{ item.ssl_cert }}"
+  register: nginx_cert_exists
+
+- name: Create certificate if certificate or key is missing
+  community.crypto.x509_certificate:
+    path: "{{ item.ssl_cert }}"
+    privatekey_path: "{{ item.ssl_key }}"
+    provider: selfsigned
+  when:
+    - not (nginx_cert_exists.stat.exists or nginx_key_exists.stat.exists)
