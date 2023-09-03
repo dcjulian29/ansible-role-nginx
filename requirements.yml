@@ -1,0 +1,5 @@
+---
+collections: []
+roles:
+- name: dcjulian29.docker
+  src: https://github.com/dcjulian29/ansible-role-docker.git
