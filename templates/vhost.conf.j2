@@ -1,7 +1,7 @@
 {% if item.server_name_redirect is defined %}
 server {
     listen            {{ item.listen if item.listen is defined else '80' }};
-{% if item.listen_ipv6 %}
+{% if item.listen_ipv6 is defined %}
     listen       [::]:{{ item.listen if item.listen is defined else '80' }};
 {% endif %}
 
@@ -20,7 +20,7 @@ map $request_uri $do_redirect {
 {% endif %}
 server {
     listen            {{ item.listen if item.listen is defined else '80' }};
-{% if item.listen_ipv6 %}
+{% if item.listen_ipv6 is defined and item.listen_ipv6 %}
     listen       [::]:{{ item.listen if item.listen is defined else '80' }};
 {% endif %}
     server_name  {{ item.server_name }};
@@ -28,7 +28,7 @@ server {
 
     location ^~ /.well-known/acme-challenge/ {
         default_type "text/plain";
-        root {{ item.acme_challenge | regex_replace('^(.*)\/$', '\1') }};
+        root {{ item.acme_challenge | default('/var/www/letsencrypt') }};
     }
 
     location = /.well-known/acme-challenge/ {
@@ -49,12 +49,12 @@ server {
 server {
 {% if nginx_ssl_enabled %}
     listen            {{ item.ssl_listen if item.ssl_listen is defined else '443' }} ssl http2;
-{%   if item.listen_ipv6 %}
+{%   if item.listen_ipv6 is defined and item.listen_ipv6 %}
     listen       [::]:{{ item.ssl_listen if item.ssl_listen is defined else '443' }} ssl http2;
 {%   endif %}
 {% else %}
     listen       {{ item.listen if item.listen is defined else '80' }};
-{%   if item.listen_ipv6 %}
+{%   if item.listen_ipv6 is defined and item.listen_ipv6 %}
     listen       [::]:{{ item.listen if item.listen is defined else '80' }};
 {%   endif %}
 {% endif %}
@@ -65,17 +65,14 @@ server {
     ssl_certificate {{ item.ssl_cert if item.ssl_cert is defined else "/etc/ssl/certs/ssl-cert-snakeoil.pem" }};
     ssl_certificate_key {{ item.ssl_key if item.ssl_key is defined else "/etc/ssl/private/ssl-cert-snakeoil.key" }};
 {% if item.ocsp is defined and item.ocsp %}
-
     ssl_stapling on;
     ssl_stapling_verify on;
 {% if item.ocsp_cert is defined %}
     ssl_trusted_certificate {{ item.ocsp_cert }};
 {% endif %}
 {% endif %}
-
     ssl_prefer_server_ciphers on;
     ssl_dhparam /etc/nginx/dhparams.pem;
-
 {% if item.hsts is defined and item.hsts %}
 
 {% if item.hsts_subdomain is defined and item.htst_subdomain %}
@@ -101,24 +98,26 @@ server {
     add_header Referrer-Policy "no-referrer" always;
     add_header Feature-Policy "geolocation 'self'";
 {% endif %}
-
 {% if item.root is defined %}
+
     root {{ item.root }};
 {% endif %}
 
     index {{ item.index | default('index.html index.htm') }};
-
 {% if item.error_page is defined %}
+
     error_page {{ item.error_page }};
 {% endif %}
 {% if item.access_log is defined %}
+
     access_log {{ item.access_log }};
 {% endif %}
 {% if item.error_log is defined %}
+
     error_log {{ item.error_log }} error;
 {% endif %}
-
 {% if item.return is defined %}
+
     return {{ item.return }};
 {% endif %}
 
