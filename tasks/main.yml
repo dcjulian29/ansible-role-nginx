@@ -53,15 +53,16 @@
     state: directory
     mode: '0755'
 
-- name: Create self-signed certificates, if needed
+- name: Create self-signed certificates
   ansible.builtin.include_tasks: selfsign.yml
   loop: "{{ nginx_vhosts }}"
   when:
+    - nginx_vhosts | length > 0
     - nginx_ssl_enabled
-    - nginx_vhosts and item.ssl_cert is defined and item.ssl_cert | length > 0 | default(false)
-    - nginx_vhosts and item.ssl_key is defined and item.ssl_key | length > 0 | default(false)
+    - item.ssl_cert is defined and item.ssl_cert | length > 0 | default(false)
+    - item.ssl_key is defined and item.ssl_key | length > 0 | default(false)
 
-- name: Create virtual vhost configuration file
+- name: Create virtual host configuration file
   ansible.builtin.include_tasks: vhost.yml
   loop: "{{ nginx_vhosts }}"
   when: nginx_vhosts | length > 0
