@@ -1,8 +1,15 @@
 ---
 - name: Include OS-specific variables
-  ansible.builtin.include_vars: "{{ ansible_os_family | lower }}.yml"
+  ansible.builtin.include_vars: "{{ lookup('ansible.builtin.first_found', params) }}"
+  vars:
+    params:
+      files:
+        - "{{ ansible_facts['distribution'] | lower }}.yml"
+        - "{{ ansible_facts['os_family'] | lower }}.yml"
+      paths:
+        - vars
 
-- name: Ensure nginx is installed.
+- name: Ensure nginx is installed
   ansible.builtin.package:
     name: "{{ nginx_package_name }}"
     update_cache: true

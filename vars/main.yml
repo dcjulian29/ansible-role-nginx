@@ -1,0 +1,6 @@
+---
+nginx_access_log: "/var/log/nginx/access.log main buffer=16k flush=2m"
+nginx_conf_path: /etc/nginx/conf.d
+nginx_conf_file_path: /etc/nginx/nginx.conf
+nginx_error_log: "/var/log/nginx/error.log warn"
+nginx_package_name: nginx
