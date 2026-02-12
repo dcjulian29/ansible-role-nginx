@@ -38,14 +38,14 @@
     owner: root
     group: root
     mode: '0644'
-  register: primary_config
+  notify: Restart nginx
 
-- name: Ensure default nginx vhost file is removed (if configured)
+- name: Ensure default nginx vhost file is removed
   ansible.builtin.file:
     path: "{{ nginx_vhost_default }}"
     state: absent
   when: nginx_remove_default_vhost | bool
-  register: vhost_config_default
+  notify: Restart nginx
 
 - name: Ensure directory for nginx vhost exists
   ansible.builtin.file:
@@ -65,24 +65,16 @@
   ansible.builtin.include_tasks: vhost.yml
   loop: "{{ nginx_vhosts }}"
   when: nginx_vhosts | length > 0
-    dest: "{{ nginx_vhost_path }}/{{ item.filename | default(item.server_name.split(' ')[0] ~ '.conf') }}"
-    force: true
-    owner: root
-    group: root
-    mode: '0644'
-  when: item.state | default('present') != 'absent'
-  with_items: "{{ nginx_vhosts }}"
-  register: vhost_config_add
 
-- name: Ensure vhost config files do not exists (if configured)
-  ansible.builtin.file:
-    path: "{{ nginx_vhost_path }}/{{ item.filename | default(item.server_name.split(' ')[0] ~ '.conf') }}"
-    state: absent
-  when: item.state | default('present') == 'absent'
-  with_items: "{{ nginx_vhosts }}"
-  register: vhost_config_remove
+- name: Ensure nginx is enabled
+  ansible.builtin.service:
+    name: nginx
+    enabled: "{{ nginx_service_enabled }}"
 
-- name: Start or re-start NGINX if needed
+- name: Ensure all handlers run before continuing
+  ansible.builtin.meta: flush_handlers
+
+- name: Start nginx
   ansible.builtin.service:
     name: nginx
     state: restarted
