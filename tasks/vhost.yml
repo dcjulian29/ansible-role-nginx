@@ -1,0 +1,46 @@
+---
+- name: Ensure website directory exist
+  ansible.builtin.file:
+    access_time: preserve
+    group: "{{ nginx_group }}"
+    mode: "0750"
+    modification_time: preserve
+    owner: "{{ nginx_user }}"
+    path: "{{ nginx_wwwroot }}/{{ item.server_name.split(' ')[0] }}"
+    state: directory
+
+- name: Ensure each virtual host configuration files exist
+  ansible.builtin.template:
+    src: "{{ item.template | default('vhost.conf.j2') }}"
+    dest: "{{ nginx_vhost_path }}/{{ item.server_name.split(' ')[0] ~ '.conf' }}"
+    owner: root
+    group: root
+    mode: '0644'
+  when: item.state | default('present') != 'absent'
+  notify: Restart nginx
+
+- name: Ensure virtual host configuration files do not exist
+  ansible.builtin.file:
+    path: "{{ nginx_vhost_path }}/{{ item.server_name.split(' ')[0] ~ '.conf' }}"
+    state: absent
+  when: item.state | default('present') == 'absent'
+  notify: Restart nginx
+
+- name: Ensure virtual host site is enabled on Debian-based systems
+  ansible.builtin.file:
+    group: root
+    dest: "{{ nginx_vhost_enabled_path }}/{{ item.server_name.split(' ')[0] }}"
+    owner: root
+    src: "{{ nginx_vhost_path }}/{{ item.server_name.split(' ')[0] ~ '.conf' }}"
+    state: link
+  when:
+    - ansible_facts['os_family'] | lower == 'debian'
+    - item.state | default('present') != 'absent'
+
+- name: Ensure virtual host site is disabled on Debian-based systems
+  ansible.builtin.file:
+    path: "{{ nginx_vhost_enabled_path }}/{{ item.server_name.split(' ')[0] }}"
+    state: absent
+  when:
+    - ansible_facts['os_family'] | lower == 'debian'
+    - item.state | default('present') == 'absent' or item.disabled | default(false)
