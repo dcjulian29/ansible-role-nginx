@@ -13,7 +13,7 @@ include {{ nginx_modules_path }}/*.conf;
 
 events {
     worker_connections  {{ nginx_worker_connections }};
-    multi_accept {{ nginx_multi_accept }};
+    multi_accept {{ "on" if nginx_multi_accept else "off" }};
 }
 
 http {
@@ -25,16 +25,16 @@ http {
     log_format main {{ nginx_log_format | indent(20) }};
     access_log {{ nginx_access_log }};
 
-    gzip {{ nginx_gzip }};
+    gzip {{ "on" if nginx_gzip else "no" }};
 
-    sendfile {{ nginx_sendfile }};
-    tcp_nopush {{ nginx_tcp_nopush }};
-    tcp_nodelay {{ nginx_tcp_nodelay }};
+    sendfile {{ "on" if nginx_sendfile else "no" }};
+    tcp_nopush {{ "on" if nginx_tcp_nopush else "no" }};
+    tcp_nodelay {{ "on" if nginx_tcp_nodelay else "no" }};
 
     keepalive_timeout {{ nginx_keepalive_timeout }};
     keepalive_requests {{ nginx_keepalive_requests }};
 
-    server_tokens {{ nginx_server_tokens }};
+    server_tokens {{ "on" if nginx_server_tokens else "off" }};
 
 {% if nginx_ssl_enabled %}
     ssl_protocols {{ nginx_ssl_protocols }};
