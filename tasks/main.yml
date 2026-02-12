@@ -21,14 +21,12 @@
     state: present
   when: nginx_ssl_enabled
 
-- name: Ensure dhparams is configured properly if needed
+- name: Ensure dhparams is configured
   community.crypto.openssl_dhparam:
-    path: '/etc/nginx/dhparams.pem'
-    select_crypto_backend: openssl
-    size: "{{ nginx_ssl_dhparams_size }}"
+    group: root
     mode: '0644'
-    owner: 'root'
-    group: 'root'
+    owner: root
+    path: /etc/nginx/dhparams.pem
   when: nginx_ssl_enabled
 
 - name: Ensure primary nginx configuration exist
