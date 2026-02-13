@@ -76,7 +76,5 @@
 - name: Start nginx
   ansible.builtin.service:
     name: nginx
-    state: restarted
-  when:
-    - nginx_service_state == "started"
-    - primary_config.changed or vhost_config_default.changed or vhost_config_add.changed or vhost_config_remove.changed
+    state: started
+  when: nginx_service_state == "started"
